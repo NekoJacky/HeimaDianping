@@ -97,3 +97,12 @@
 `com.hmdp.utils.RefreshTokenInterceptor` 用于刷新 token
 
 `com.hmdp.utils.LoginInterceptor` 用于拦截未登录用户
+
+## 二、商户查询缓存
+
+### 2.1 Redis 缓存
+
+为 `com.hmdp.controller.ShopController.queryShopById` `com.hmdp.controller.ShopTypeController.queryTypeList`
+添加 Redis 缓存。
+
+### 2.2 Redis 缓存更新
