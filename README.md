@@ -106,3 +106,53 @@
 添加 Redis 缓存。
 
 ### 2.2 Redis 缓存更新
+
+为了解决商铺缓存与数据库一致性问题，我们首先可以添加查询商铺的缓存失效时间。
+（`com.hmdp.service.impl.ShopServiceImpl.queryById`）
+
+接下来是更新业务，`com.hmdp.controller.ShopController.updateShop`
+其实就是两步，先更新数据库，然后删除缓存（为什么不能先删除缓存然后更新数据库？因为删除缓存，如果数据库更新操作还没有完成就有查询请求，
+会返回未更新的信息并写入缓存，该缓存失效前缓存与数据库不一致）。
+
+### 2.3 缓存穿透
+
+请求无效 key 导致 Redis 中无法找到该 key，访问数据库。
+
+- 缓存空对象
+
+`com.hmdp.service.impl.ShopServiceImpl.queryById`
+
+![](img/shop_1.png)
+
+- 布隆过滤器
+
+使用哈希计算数据库中所有信息，并按哈希位保存在过滤器中。当收到请求时计算请求哈希，如果命中了布隆过滤器中没有的位则直接返回，
+如果命中了已有的位则放行。因此布隆过滤器不能完全过滤缓存穿透请求。
+
+### 2.4 缓存雪崩
+
+短时间内大量缓存失效或者 Redis 宕机，导致大量请求同时到达数据库。
+
+- Redis TTL 增加随机值
+- 使用Redis 集群
+
+### 2.5 缓存击穿
+
+热点 key 过期导致大量热点请求命中数据库。
+
+#### 2.5.1 互斥锁
+
+缓存重建时使用互斥锁，防止大量的请求同时访问数据库进行缓存重建。
+
+![](img/shop_2.png)
+
+`com.hmdp.service.impl.ShopServiceImpl.tryLock` `com.hmdp.service.impl.ShopServiceImpl.unlock`
+自定义锁的获取与释放
+锁通过 Redis 实现
+
+`com.hmdp.service.impl.ShopServiceImpl.queryById` 实现互斥锁解决缓存穿透的问题并移动到
+`com.hmdp.service.impl.ShopServiceImpl.queryShopById`。原方法内注释保留了原实现。
+
+#### 2.5.2 逻辑过期
+
+不设置过期时间，在字段中加入一个逻辑过期时间，当请求该数据时已经到达逻辑过期时间，开新线程进行更新，而该线程直接返回旧数据。
