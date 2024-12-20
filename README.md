@@ -150,9 +150,21 @@
 自定义锁的获取与释放
 锁通过 Redis 实现
 
-`com.hmdp.service.impl.ShopServiceImpl.queryById` 实现互斥锁解决缓存穿透的问题并移动到
+`com.hmdp.service.impl.ShopServiceImpl.queryShopByIdWithMutex` 实现互斥锁解决缓存穿透的问题并移动到
 `com.hmdp.service.impl.ShopServiceImpl.queryShopById`。原方法内注释保留了原实现。
 
 #### 2.5.2 逻辑过期
 
 不设置过期时间，在字段中加入一个逻辑过期时间，当请求该数据时已经到达逻辑过期时间，开新线程进行更新，而该线程直接返回旧数据。
+`com.hmdp.service.impl.ShopServiceImpl.queryShopByIdWithExpire`
+
+![shop_3.png](img/shop_3.png)
+
+## 2.6 Redis 工具类
+
+`com.hmdp.utils.CacheClient`
+
+- 将任意 java 对象转化为 json 并存储在 String 类型的 key 中，并设置过期时间 TTL
+- 将任意 java 对象转化为 json 并存储在 String 类型的 key 中，并设置逻辑过期时间
+- 根据指定的 key 查询缓存，并反序列化为具体类型，利用缓存空值的方式防止缓存击穿
+- 根据指定的 key 查询缓存，并反序列化为具体类型，利用逻辑过期时间防止缓存击穿
