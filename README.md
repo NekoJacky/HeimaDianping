@@ -179,3 +179,48 @@
 一种可能的 ID 结构为：1位符号位（0，表示正数），31位时间戳（以秒为单位），32位序列号共64位（8个字节）。
 
 `com.hmdp.utils.RedisIDGenerator`
+
+### 3.2 添加优惠券
+
+`com.hmdp.controller.VoucherController`
+
+### 3.3 秒杀下单
+
+`com.hmdp.controller.VoucherOrderController.seckillVoucher`
+
+![buy_1.png](img/buy_1.png)
+
+### 超卖问题
+
+高并发状态下，查询库存后可能不能在下一个查询开始前卖出库存，导致超卖。
+我们可以加锁来解决这个问题。
+
+悲观锁认为线程安全问题大概率会发生，因此先加锁再获取资源。
+乐观锁认为线程安全问题很难发生，因此不加锁，只在写数据时判断数据是否被修改。
+
+因此我们可以使用乐观锁。
+
+乐观锁：版本号法，CAS 法
+
+CAS 法在本项目中的使用很简单，在修改数据库时添加判断数据库当前值与判断库存是否充足时的值是否相等就行了。
+
+```Java
+boolean success = seckillVoucherService.update()
+        .setSql("stock = stock - 1")
+        .eq("voucher_id", voucherId)
+        .eq("stock", voucher.getStock())
+        .update();
+```
+
+但是这种方法因为并发修改而失败时，并没有进行重试，因此返回 `false` 导致部分用户无法购买。
+因此可以作出修改，当当前库存值大于0时就可以进行购买。
+
+```Java
+boolean success = seckillVoucherService.update()
+        .setSql("stock = stock - 1")
+        .eq("voucher_id", voucherId)
+        .gt("stock", 0)
+        .update();
+```
+
+现在该服务已经可以成功运行，但是是直接运行在 MySQL 中，因此性能并没有达到完美。
