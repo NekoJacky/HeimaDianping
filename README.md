@@ -1,12 +1,20 @@
 # 黑马点评
 
-项目中 `Redis` 用途
+## 项目中 `Redis` 用途
 
 1. 代替 `Session` ，解决集群共享问题（数据共享，内存存储，键值对存储）
    - 选择合适的数据结构（String、Hash 等）
    - 选择合适的 key（电话号码，token）
    - 设置合适的过期时间（如验证码设置为5分钟）
    - 选择合适的存储粒度（只保存业务需要的信息）
+2. 作为缓存加速服务的运行
+3. 使用 Redis 实现互斥锁
+4. 使用 Redis 实现分布式锁
+   - 多进程可见（包括集群模式）
+   - 互斥
+   - 高可用
+   - 高性能（高并发）
+   - 安全性
 
 ## 一、基于 Session 与 Redis 的短信登录
 
@@ -190,7 +198,7 @@
 
 ![buy_1.png](img/buy_1.png)
 
-### 超卖问题
+### 3.4 超卖问题
 
 高并发状态下，查询库存后可能不能在下一个查询开始前卖出库存，导致超卖。
 我们可以加锁来解决这个问题。
@@ -224,3 +232,31 @@ boolean success = seckillVoucherService.update()
 ```
 
 现在该服务已经可以成功运行，但是是直接运行在 MySQL 中，因此性能并没有达到完美。
+
+### 3.5 一人一单
+
+修改业务，使每个用户只能下单一次。要注意多线程问题，可能导致一个用户短时间内下多单（加悲观锁，不能用乐观锁：
+乐观锁用于修改，而下单操作涉及到新增）。
+
+将需要加锁的部分抽象出来。
+`com.hmdp.service.impl.VoucherOrderServiceImpl.createVoucherOrder`
+
+当然还有一些细节问题，比如数据库的事务管理与加锁的位置：
+
+```Java
+synchronized (userId.toString().intern()) {
+   // 获取当前代理对象
+   IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+   return proxy.createVoucherOrder(voucherId);
+}
+```
+
+先获取当前的对象才可以确保事务可以进行（获取代理对象）。
+要确保事务提交以后才可以释放锁。
+
+### 3.6 分布式锁
+
+以上的并发解决方案只能解决单机的并发安全问题。当我们部署了多台服务器后，由于一台服务器内部的互斥锁无法锁住其它服务器，
+因此仍然会导致一个用户可以下单多次。
+
+因此我们需要引入分布式锁解决问题。

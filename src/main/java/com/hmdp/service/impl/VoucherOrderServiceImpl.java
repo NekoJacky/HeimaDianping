@@ -9,6 +9,7 @@ import com.hmdp.service.IVoucherOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.RedisIDGenerator;
 import com.hmdp.utils.UserHolder;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +25,6 @@ import java.time.LocalDateTime;
  * @since 2021-12-22
  */
 @Service
-@Transactional
 public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> implements IVoucherOrderService {
 
     @Resource
@@ -45,19 +45,35 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if(voucher.getStock() < 1) {
             return Result.fail("There is no more voucher");
         }
+        Long userId = UserHolder.getUser().getId();
+        synchronized (userId.toString().intern()) {
+            // 获取当前代理对象
+            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+            return proxy.createVoucherOrder(voucherId);
+        }
+    }
+
+    @Transactional
+    public Result createVoucherOrder(Long voucherId) {
+        // 一人一单判断
+        Long userId = UserHolder.getUser().getId();
+        Integer i = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
+        if (i > 0) {
+            return Result.fail("Can't buy more voucher");
+        }
         // 扣减库存，创建订单
         boolean success = seckillVoucherService.update()
                 .setSql("stock = stock - 1")
                 .eq("voucher_id", voucherId)
                 .gt("stock", 0)
                 .update();
-        if(!success) {
+        if (!success) {
             return Result.fail("There is no more voucher");
         }
         VoucherOrder voucherOrder = new VoucherOrder();
         Long OrderId = redisIDGenerator.nextID("order");
         voucherOrder.setId(OrderId);
-        voucherOrder.setUserId(UserHolder.getUser().getId());
+        voucherOrder.setUserId(userId);
         voucherOrder.setVoucherId(voucherId);
         // 写回数据库
         save(voucherOrder);
