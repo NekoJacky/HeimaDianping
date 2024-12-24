@@ -260,3 +260,37 @@ synchronized (userId.toString().intern()) {
 因此仍然会导致一个用户可以下单多次。
 
 因此我们需要引入分布式锁解决问题。
+
+`com.hmdp.utils.ILock` 分布式锁接口。
+
+`com.hmdp.utils.SimpleRedisLock` 基于 Redis 实现的分布式锁。
+
+![buy_2.png](img/buy_2.png)
+
+然后就可以修改 3.5 中的锁的部分。
+
+### 3.7 Redis 分布式锁误删问题
+
+误删问题的原因
+
+![buy_3.png](img/buy_3.png)
+
+解决方法：释放锁时判断锁的标识（比如线程序号。
+在集群模式下，每个 jvm 都会维护自己的线程标识，因此有概率导致线程标识冲突。因此可以考虑将线程标识换成 uuid 等）。
+
+`com.hmdp.utils.SimpleRedisLock`
+
+### 3.8 分布式锁的原子性问题
+
+![buy_4.png](img/buy_4.png)
+
+由于 Redis 的事务是一次性批处理得到的，无法获取中间过程，而且只能保证原子性，不能保证一致性。如果要强行使用 Redis 事务，
+需要配合乐观锁等技术，较为繁琐，因此可以使用 Lua 脚本。
+
+Lua 调用 Redis 是通过 `redis.call()` 函数进行的。
+
+Redis 使用 `EVAL` 命令调用 Lua 脚本。
+
+Java 中也可以调用 Lua 脚本。
+
+`com.hmdp.utils.SimpleRedisLock.unlock`
