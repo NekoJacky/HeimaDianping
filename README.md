@@ -15,6 +15,7 @@
    - 高可用
    - 高性能（高并发）
    - 安全性
+5. 加速秒杀服务
 
 ## 一、基于 Session 与 Redis 的短信登录
 
@@ -231,8 +232,6 @@ boolean success = seckillVoucherService.update()
         .update();
 ```
 
-现在该服务已经可以成功运行，但是是直接运行在 MySQL 中，因此性能并没有达到完美。
-
 ### 3.5 一人一单
 
 修改业务，使每个用户只能下单一次。要注意多线程问题，可能导致一个用户短时间内下多单（加悲观锁，不能用乐观锁：
@@ -305,3 +304,11 @@ Java 中也可以调用 Lua 脚本。
 `com.hmdp.config.RedissonConfig` Redisson 配置
 
 ### 3.10 秒杀优化
+
+该服务直接运行在 MySQL 中，因此性能并没有达到完美。
+
+因此可以使用 Redis 进行优化，将判断秒杀库存和校验一人一单交给 Redis 去做。
+
+![buy_5.png](img/buy_5.png)
+
+![buy_6.png](img/buy_6.png)
