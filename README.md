@@ -263,7 +263,7 @@ synchronized (userId.toString().intern()) {
 
 `com.hmdp.utils.ILock` 分布式锁接口。
 
-`com.hmdp.utils.SimpleRedisLock` 基于 Redis 实现的分布式锁。
+`com.hmdp.utils.SimpleRedisLock` 基于 Redis 实现的分布式锁，使用 `setnx` 实现。
 
 ![buy_2.png](img/buy_2.png)
 
@@ -294,3 +294,14 @@ Redis 使用 `EVAL` 命令调用 Lua 脚本。
 Java 中也可以调用 Lua 脚本。
 
 `com.hmdp.utils.SimpleRedisLock.unlock`
+
+### 3.9 分布式锁的优化
+
+原有的分布式锁有一些问题，如不可重入（同一个线程无法多次获取同一把锁），不可重试（获取锁失败就直接返回 false ），超时释放
+（如果任务执行时间较长可能导致锁失效），主从一致性（如主节点加锁后挂了，新主节点还没有同步原主节点的信息，则新主节点中没有锁信息）问题。
+
+这些问题难以解决，因此我们可以使用 `Redisson` 这样的第三方分布式工具。
+
+`com.hmdp.config.RedissonConfig` Redisson 配置
+
+### 3.10 秒杀优化
