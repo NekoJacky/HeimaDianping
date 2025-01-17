@@ -1,6 +1,6 @@
 package com.hmdp.mapper;
 
-import com.hmdp.entity.SeckillVoucher;
+import com.hmdp.entity.SecKillVoucher;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
@@ -11,6 +11,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @author 虎哥
  * @since 2022-01-04
  */
-public interface SeckillVoucherMapper extends BaseMapper<SeckillVoucher> {
+public interface SecKillVoucherMapper extends BaseMapper<SecKillVoucher> {
 
 }

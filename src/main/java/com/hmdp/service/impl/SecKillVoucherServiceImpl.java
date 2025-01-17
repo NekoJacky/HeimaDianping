@@ -1,7 +1,7 @@
 package com.hmdp.service.impl;
 
-import com.hmdp.entity.SeckillVoucher;
-import com.hmdp.mapper.SeckillVoucherMapper;
+import com.hmdp.entity.SecKillVoucher;
+import com.hmdp.mapper.SecKillVoucherMapper;
 import com.hmdp.service.ISeckillVoucherService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
@@ -15,6 +15,6 @@ import org.springframework.stereotype.Service;
  * @since 2022-01-04
  */
 @Service
-public class SeckillVoucherServiceImpl extends ServiceImpl<SeckillVoucherMapper, SeckillVoucher> implements ISeckillVoucherService {
+public class SecKillVoucherServiceImpl extends ServiceImpl<SecKillVoucherMapper, SecKillVoucher> implements ISeckillVoucherService {
 
 }

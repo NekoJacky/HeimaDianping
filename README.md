@@ -15,7 +15,7 @@
    - 高可用
    - 高性能（高并发）
    - 安全性
-5. 加速秒杀服务
+5. 加速秒杀服务（将 MySQL 中进行的操作通过 Lua 脚本等方式由 Redis 进行）
 
 ## 一、基于 Session 与 Redis 的短信登录
 
@@ -23,13 +23,13 @@
 
 ### 1.1 发送短信验证码
 
-`controller/UserController.sendCode` -> `service/impl/UserServiceImpl.sendCode`
+`controller.UserController.sendCode` -> `service.impl.UserServiceImpl.sendCode`
 
 课程的问题：黑马没有将电话号码保存，可能会导致用户使用一个号码接受验证码，使用另一个号码登录
 
 ### 1.2 短信验证码登录与注册
 
-`controller/UserController.login` -> `service/impl/UserServiceImpl.login`
+`controller.UserController.login` -> `service.impl.UserServiceImpl.login`
 
 `UserServiceImpl.login` 中用到的 `com.baomidou.mybatisplus.extension.service.IService.query`
 与 `UserServiceImpl.signUp` 中用到的 `com.baomidou.mybatisplus.extension.service.IService.save`
@@ -242,7 +242,7 @@ boolean success = seckillVoucherService.update()
 
 当然还有一些细节问题，比如数据库的事务管理与加锁的位置：
 
-```Java
+```
 synchronized (userId.toString().intern()) {
    // 获取当前代理对象
    IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
@@ -312,3 +312,24 @@ Java 中也可以调用 Lua 脚本。
 ![buy_5.png](img/buy_5.png)
 
 ![buy_6.png](img/buy_6.png)
+
+#### 3.10.1 新增秒杀优惠券的同时，将优惠券信息保存在 Redis 中
+
+`com.hmdp.service.impl.VoucherServiceImpl.addSeckillVoucher`
+
+#### 3.10.2 基于 Lua 脚本，判断秒杀库存、一人一单，决定用户是否抢购成功
+
+`secKill.lua`
+
+#### 3.10.3 抢购成功，异步下单，将优惠券 id 与用户 id 封装后存入阻塞队列
+
+`com.hmdp.service.impl.VoucherOrderServiceImpl.secKillVoucher`
+改造该方法，我们不再使用 Java 代码判断，而是用 3.10.2 中完成的 lua 脚本来完成
+
+`com.hmdp.service.impl.VoucherOrderServiceImpl.createVoucherOrder(com.hmdp.entity.VoucherOrder)`
+重写的一人一单
+
+基于阻塞队列的异步秒杀存在一些问题：
+- （内存限制）我们使用的阻塞队列为 Java 自带的阻塞队列，使用 JVM 的内存，当并发量较大时易造成内存溢出。此外阻塞队列大小是固定的，有可能被占满。
+- （数据安全）使用内存保存数据，没有持久化机制。
+- 

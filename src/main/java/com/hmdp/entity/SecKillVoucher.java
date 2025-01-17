@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @TableName("tb_seckill_voucher")
-public class SeckillVoucher implements Serializable {
+public class SecKillVoucher implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
