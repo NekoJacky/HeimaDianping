@@ -4,9 +4,10 @@
 --- DateTime: 2025/1/17 13:24
 ---
 
--- 优惠券 id 与用户 id 为传入的参数
+-- 传入的参数 - 优惠券 id、用户 id 与订单 id
 local voucherId = ARGV[1]
 local userId = ARGV[2]
+local orderId = ARGV[3]
 
 -- 库存 key 与订单 key
 local stockKey = "seckill:stock:" .. voucherId
@@ -26,5 +27,7 @@ end
 -- 扣库存，保存用户
 redis.call('incrby', stockKey, -1)
 redis.call('sadd', orderKey, userId)
+-- 发送消息到消息队列中
+redis.call('xadd', 'stream.orders', '*', 'userId', userId, 'voucherId', voucherId, 'id', orderId)
 
 return 0
