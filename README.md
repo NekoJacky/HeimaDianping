@@ -352,3 +352,47 @@ Java 中也可以调用 Lua 脚本。
 修改 `secKill.lua`，在认定资格后，直接向 stream.orders 中添加消息
 
 在项目启动时，开启一个线程任务，尝试获取 stream.orders 中的消息，完成下单。
+
+## 四、达人探店
+
+### 4.1 发布探店笔记
+
+探店笔记对应的表有两个：`tb_blog` 和 `tb_blog_comments`，分别对应探店笔记与探店笔记的评价。
+
+上传笔记的 api 有两个：
+
+1. /upload/blog：`com.hmdp.controller.UploadController.uploadImage`上传图片。在用户在编辑页面添加图片以后就自动上传。
+2. /blog：`com.hmdp.controller.BlogController.saveBlog`用户编辑完成以后点击上传以后，上传除图片外的其它内容。
+
+### 4.2 查看探店笔记
+
+`com.hmdp.controller.BlogController#queryBlogById`
+
+### 4.3 探店笔记点赞
+
+同一个用户只能点赞一次，再次点击则取消点赞。
+
+使用 Redis 来缓存点赞用户来加速访问。
+
+![Like_1.png](img/Like_1.png)
+
+`com.hmdp.controller.BlogController.likeBlog`
+
+### 4.4 点赞排行榜
+
+想要得到最早点赞的几名用户，我们需要使用有序集合 `SortedSet`，这种数据结构按照用户自定义的 `score` 排序，比如时间戳。在 Redis 中为 ZSET。
+将 4.3 修改为 ZSET 即可。
+
+`com.hmdp.service.impl.BlogServiceImpl.queryBlogLikes`
+为点赞排行的实现，要注意数据库查询数据时有自动排序，因此要手动指定排序
+
+```java
+List<UserDTO> userDTOList = userService
+                .query()
+                .in("id", ids)
+                .last("ORDER BY FIELD(id, " + idStr + ")")
+                .list()
+                .stream()
+                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
+                .collect(Collectors.toList());
+```
