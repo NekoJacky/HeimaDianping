@@ -17,6 +17,7 @@
    - 安全性
 5. 加速秒杀服务（将原本需要在 MySQL 中进行的操作通过 Lua 脚本等方式转移至 Redis 进行）
 6. Redis 可以作为消息队列使用
+7. 使用 Redis 中的数据结构（如 Set）实现求功能（如求交集）
 
 ## 一、基于 Session 与 Redis 的短信登录
 
@@ -396,3 +397,20 @@ List<UserDTO> userDTOList = userService
                 .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
                 .collect(Collectors.toList());
 ```
+
+## 五、好友关注
+
+### 5.1 关注和取关
+
+这里需要实现两个接口，分别为关注与取关接口和判断是否已关注的接口
+
+`com.hmdp.controller.FollowController.follow`
+`com.hmdp.controller.FollowController.isFollow`
+
+### 5.2 共同关注
+
+`com.hmdp.controller.FollowController.followCommons`
+
+### 5.3 关注推送
+
+
